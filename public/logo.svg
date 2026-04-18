@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="36" height="36">
+  <!-- Warm terracotta rounded-square background -->
+  <rect x="1" y="1" width="34" height="34" rx="9" ry="9" fill="#c1622f"/>
+
+  <!-- Bowl shape (chunky, friendly) -->
+  <path d="M10 17 Q10 24 18 24 Q26 24 26 17" stroke="#f5e0d3" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Bowl base/foot -->
+  <line x1="14.5" y1="24" x2="21.5" y2="24" stroke="#f5e0d3" stroke-width="2.2" stroke-linecap="round"/>
+
+  <!-- Steam lines rising from bowl -->
+  <path d="M14.5 14.5 Q13.5 12.5 14.5 10.5" stroke="#f5e0d3" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <path d="M18 14 Q17 11.5 18 9.5" stroke="#f5e0d3" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <path d="M21.5 14.5 Q22.5 12.5 21.5 10.5" stroke="#f5e0d3" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+
+  <!-- Small calendar tick mark in bottom-right of bowl area — a subtle "C" curl suggesting calendar page corner -->
+  <path d="M23 20 Q25 20 25 18" stroke="#f5e0d3" stroke-width="1.4" stroke-linecap="round" fill="none" opacity="0.6"/>
+</svg>
