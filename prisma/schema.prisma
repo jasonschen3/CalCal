@@ -42,6 +42,7 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  meals         MealLog[]
 }
 
 model VerificationToken {
@@ -50,4 +51,17 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model MealLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      String   // YYYY-MM-DD
+  label     String   // Breakfast | Lunch | Dinner | Snack
+  type      String   // eat_out | eat_at_home
+  name      String
+  grade     String
+  details   String?  // JSON: calories, protein, restaurant, etc.
+  createdAt DateTime @default(now())
 }

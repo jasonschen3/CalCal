@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GradeBadge } from "@/components/ui/GradeBadge";
+import { getMealLabel } from "@/lib/grade-utils";
 import type { Restaurant, MenuItem } from "@/types";
 
 function StarRating({ rating }: { rating: number }) {
@@ -16,6 +17,28 @@ function StarRating({ rating }: { rating: number }) {
 
 function PriceLevel({ level }: { level: number }) {
   return <span className="text-gray-400 text-xs">{"$".repeat(level)}{"·".repeat(3 - level)}</span>;
+}
+
+function getLocation(): Promise<{ lat: number; lng: number }> {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation not supported"));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {
+        // Fall back to IP-based location
+        fetch("https://ipapi.co/json/")
+          .then((r) => r.json())
+          .then((d: { latitude: number; longitude: number }) =>
+            resolve({ lat: d.latitude, lng: d.longitude })
+          )
+          .catch(() => reject(new Error("Could not determine your location.")));
+      },
+      { timeout: 5000, maximumAge: 300000 }
+    );
+  });
 }
 
 function getUserProfile() {
@@ -41,19 +64,31 @@ export default function EatOutPage() {
   const [loadingStatus, setLoadingStatus] = useState("Requesting your location...");
   const [menuLoading, setMenuLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loggedItems, setLoggedItems] = useState<Set<string>>(new Set());
+
+  const logMeal = (item: MenuItem, restaurant: Restaurant) => {
+    fetch("/api/meals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        label: getMealLabel(),
+        type: "eat_out",
+        name: item.name,
+        grade: item.grade,
+        details: {
+          restaurant: restaurant.name,
+          calories: item.estimatedCalories,
+          protein: item.estimatedProtein,
+        },
+      }),
+    }).then(() => setLoggedItems((prev) => new Set(prev).add(item.id)));
+  };
 
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setError("Geolocation not supported by your browser.");
-      setLoading(false);
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude: lat, longitude: lng } = pos.coords;
+    getLocation()
+      .then(({ lat, lng }) => {
         const { goal, restrictions } = getUserProfile();
-        setLoadingStatus("Finding restaurants near you...");
+        setLoadingStatus(`Got location (${lat.toFixed(3)}, ${lng.toFixed(3)}) — fetching restaurants...`);
 
         const params = new URLSearchParams({
           lat: String(lat),
@@ -62,30 +97,23 @@ export default function EatOutPage() {
           restrictions: restrictions.join(","),
         });
 
-        fetch(`/api/restaurants?${params}`)
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+
+        return fetch(`/api/restaurants?${params}`, { signal: controller.signal })
           .then(async (r) => {
+            clearTimeout(timer);
             const data = await r.json();
-            if (!r.ok) throw new Error(data.error ?? "API error");
+            if (!r.ok) throw new Error(data.error ?? `HTTP ${r.status}`);
             return data;
-          })
-          .then((data) => {
-            if (Array.isArray(data)) setRestaurants(data);
-            else setError("No restaurants found nearby.");
-          })
-          .catch((e: Error) => setError(e.message))
-          .finally(() => setLoading(false));
-      },
-      (err) => {
-        console.error("Geolocation error:", err.code, err.message);
-        const msg =
-          err.code === 1
-            ? "Location access denied. Enable location permissions to see nearby restaurants."
-            : `Could not get your location (code ${err.code}: ${err.message})`;
-        setError(msg);
-        setLoading(false);
-      },
-      { timeout: 30000, maximumAge: 60000 }
-    );
+          });
+      })
+      .then((data) => {
+        if (Array.isArray(data)) setRestaurants(data);
+        else setError("No restaurants found nearby.");
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
   }, []);
 
   const handleSelectRestaurant = (r: Restaurant) => {
@@ -167,7 +195,7 @@ export default function EatOutPage() {
                   )}
                   <p className="text-sm text-gray-600 mb-3">{item.reason}</p>
                   {(item.estimatedCalories || item.estimatedProtein) && (
-                    <div className="flex gap-3">
+                    <div className="flex gap-3 mb-3">
                       {item.estimatedCalories && (
                         <span className="text-xs bg-gray-50 border border-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
                           ~{item.estimatedCalories} cal
@@ -179,6 +207,16 @@ export default function EatOutPage() {
                         </span>
                       )}
                     </div>
+                  )}
+                  {loggedItems.has(item.id) ? (
+                    <span className="text-xs text-green-600 font-medium">✓ Logged</span>
+                  ) : (
+                    <button
+                      onClick={() => logMeal(item, selectedRestaurant)}
+                      className="text-xs font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors"
+                    >
+                      Log this meal
+                    </button>
                   )}
                 </div>
               ))}

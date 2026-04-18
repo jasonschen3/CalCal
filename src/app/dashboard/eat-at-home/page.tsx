@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { GradeBadge } from "@/components/ui/GradeBadge";
+import { getMealLabel } from "@/lib/grade-utils";
 import type { HomeRecommendation } from "@/types";
 
 export default function EatAtHomePage() {
@@ -11,9 +12,25 @@ export default function EatAtHomePage() {
   const [inputMode, setInputMode] = useState<"photo" | "text" | null>(null);
   const [text, setText] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<{ data: string; mediaType: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<HomeRecommendation | null>(null);
   const [loadingMessage, setLoadingMessage] = useState("");
+  const [logged, setLogged] = useState(false);
+
+  const logMeal = (rec: HomeRecommendation) => {
+    fetch("/api/meals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        label: getMealLabel(),
+        type: "eat_at_home",
+        name: rec.bestOption,
+        grade: rec.grade,
+        details: { calories: rec.estimatedCalories, protein: rec.estimatedProtein },
+      }),
+    }).then(() => setLogged(true));
+  };
 
   const LOADING_MESSAGES = [
     "Scanning your food...",
@@ -25,9 +42,16 @@ export default function EatAtHomePage() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const url = URL.createObjectURL(file);
-    setImagePreview(url);
+    setImagePreview(URL.createObjectURL(file));
     setInputMode("photo");
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      const [header, data] = dataUrl.split(",");
+      const mediaType = header.match(/:(.*?);/)?.[1] ?? "image/jpeg";
+      setImageBase64({ data, mediaType });
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleAnalyze = async () => {
@@ -72,17 +96,11 @@ export default function EatAtHomePage() {
         }),
       });
       const data = await res.json();
+      if (data.error) throw new Error(data.error);
       setResult(data);
-    } catch {
-      // Fallback mock result
-      setResult({
-        bestOption: "Scrambled eggs with Greek yogurt and toast",
-        alternatives: ["Greek yogurt with fruit", "Eggs on toast"],
-        estimatedCalories: 520,
-        estimatedProtein: 36,
-        grade: "A",
-        explanation: "Strong high-protein option using what you have. Eggs and Greek yogurt together hit your protein target efficiently.",
-      });
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong getting your recommendation. Please try again.");
     } finally {
       clearInterval(interval);
       setLoading(false);
@@ -163,9 +181,19 @@ export default function EatAtHomePage() {
             * Nutrition estimates are approximate. Values may vary based on portion size.
           </p>
 
+          {logged ? (
+            <div className="text-center text-sm text-green-600 font-medium mb-3">✓ Meal logged</div>
+          ) : (
+            <button
+              onClick={() => logMeal(result)}
+              className="w-full bg-green-600 text-white font-semibold py-3.5 rounded-xl hover:bg-green-700 transition-colors mb-3"
+            >
+              Log this meal
+            </button>
+          )}
           <button
             onClick={() => router.push("/dashboard")}
-            className="w-full bg-green-600 text-white font-semibold py-3.5 rounded-xl hover:bg-green-700 transition-colors"
+            className="w-full border border-gray-200 text-gray-600 font-medium py-3.5 rounded-xl hover:bg-gray-50 transition-colors"
           >
             Back to Dashboard
           </button>

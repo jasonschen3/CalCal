@@ -44,6 +44,8 @@ export default function DashboardPage() {
   const [currentTime, setCurrentTime] = useState("");
   const [mealWindows, setMealWindows] = useState<MealWindow[]>(mockMealWindows);
   const [calendarLoaded, setCalendarLoaded] = useState(false);
+  const [todayGrade, setTodayGrade] = useState<string | null>(null);
+  const [todayLogs, setTodayLogs] = useState<{ label: string; name: string; grade: string }[]>([]);
 
   const userName = session?.user?.name?.split(" ")[0] ?? "there";
 
@@ -66,8 +68,16 @@ export default function DashboardPage() {
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) setMealWindows(data);
       })
-      .catch(() => {}) // silently fall back to mock data
+      .catch(() => {})
       .finally(() => setCalendarLoaded(true));
+
+    fetch("/api/meals")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.dailyGrade) setTodayGrade(data.dailyGrade);
+        if (Array.isArray(data.logs)) setTodayLogs(data.logs);
+      })
+      .catch(() => {});
   }, [status]);
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -116,8 +126,8 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-xs text-gray-500 mb-1">Today&apos;s grade</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-green-600">{mockDailySummary.overallGrade}</span>
-              <span className="text-xs text-gray-400">projected</span>
+              <span className="text-3xl font-bold text-green-600">{todayGrade ?? "—"}</span>
+              <span className="text-xs text-gray-400">{todayGrade ? "logged" : "nothing logged"}</span>
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -201,20 +211,29 @@ export default function DashboardPage() {
 
         {/* Daily breakdown */}
         <div>
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Today&apos;s grades</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Today&apos;s logged meals</h2>
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <div className="space-y-3">
-              {mockDailySummary.breakdown.map((item, i) => (
-                <div key={i} className="flex items-center justify-between">
-                  <span className="text-sm text-gray-700">{item.label}</span>
-                  <GradeBadge grade={item.grade} size="sm" />
-                </div>
-              ))}
-              <div className="border-t border-gray-100 pt-3 flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-900">Overall</span>
-                <GradeBadge grade={mockDailySummary.overallGrade} size="md" />
+            {todayLogs.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">No meals logged yet today. Use Eat Out or Eat at Home to log a meal.</p>
+            ) : (
+              <div className="space-y-3">
+                {todayLogs.map((log, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div>
+                      <span className="text-xs text-gray-400 font-medium">{log.label}</span>
+                      <p className="text-sm text-gray-700">{log.name}</p>
+                    </div>
+                    <GradeBadge grade={log.grade as import("@/types").Grade} size="sm" />
+                  </div>
+                ))}
+                {todayGrade && (
+                  <div className="border-t border-gray-100 pt-3 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-900">Overall</span>
+                    <GradeBadge grade={todayGrade as import("@/types").Grade} size="md" />
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
