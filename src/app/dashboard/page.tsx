@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Icon } from "@/components/ui/Icon";
 import { GradeBadge } from "@/components/ui/GradeBadge";
-import { mockMealWindows, mockDailySummary } from "@/lib/mock-data";
+import { mockMealWindows, mockDailySummary, mockRestaurants, mockMenuItems } from "@/lib/mock-data";
 import type { MealWindow } from "@/types";
 
 function GoalLabel(goal: string) {
@@ -38,11 +38,22 @@ function PathIcon({ path }: { path: MealWindow["recommendedPath"] }) {
   return <span title="Flexible" className="text-[var(--primary-text)] opacity-70"><Icon name="refresh" size={14} /></span>;
 }
 
+type HungryState = "idle" | "loading" | "result";
+
 export default function DashboardPage() {
   const router = useRouter();
   const [goal, setGoal] = useState("high_protein");
   const [userName, setUserName] = useState("Alex");
   const [currentTime, setCurrentTime] = useState("");
+  const [hungryState, setHungryState] = useState<HungryState>("idle");
+
+  const topRestaurant = mockRestaurants[0];
+  const topDish = mockMenuItems[0];
+
+  const handleImHungry = () => {
+    setHungryState("loading");
+    setTimeout(() => setHungryState("result"), 1400);
+  };
 
   useEffect(() => {
     const profile = localStorage.getItem("calcal_profile");
@@ -76,7 +87,7 @@ export default function DashboardPage() {
         </div>
       </nav>
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
+      <main className="max-w-4xl mx-auto px-6 py-8 pb-28">
         {/* Header */}
         <div className="mb-8">
           <p className="text-sm text-[var(--text-muted)] font-medium mb-1">{today} · {currentTime}</p>
@@ -191,6 +202,90 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* Sticky I'M HUNGRY! bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-50">
+        {/* Loading state */}
+        {hungryState === "loading" && (
+          <div className="max-w-4xl mx-auto px-6 pb-6 fade-in">
+            <div className="bg-[var(--surface)] rounded-3xl border-2 border-[var(--border)] px-6 py-4 shadow-cozy-md flex items-center gap-4">
+              <div className="w-8 h-8 bg-[var(--primary-light)] rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "var(--primary)", borderTopColor: "transparent" }} />
+              </div>
+              <div>
+                <p className="font-bold text-[var(--foreground)] text-sm">Finding your best option…</p>
+                <p className="text-xs text-[var(--text-faint)] font-medium">Checking nearby spots · Matching your goal</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Result bottom sheet */}
+        {hungryState === "result" && (
+          <div className="max-w-4xl mx-auto px-6 pb-6 fade-in">
+            <div className="bg-gradient-to-r from-[var(--primary)] to-[#d4824a] rounded-3xl p-5 text-white shadow-cozy-md">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <span className="stamp text-white/90">Found it</span>
+                  <h2 className="text-lg font-extrabold mt-1">{topRestaurant.name}</h2>
+                  <p className="text-white/80 text-sm font-medium">{topRestaurant.distanceMinutes} min away · {topRestaurant.cuisine}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <GradeBadge grade={topRestaurant.grade} size="lg" />
+                  <button
+                    onClick={() => setHungryState("idle")}
+                    className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center text-white/80 hover:bg-white/30 transition-colors text-sm font-bold"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+              <div className="bg-white/15 rounded-2xl px-4 py-2.5 mb-3">
+                <p className="text-xs text-white/70 font-bold mb-0.5">Top dish for your goal</p>
+                <div className="flex items-center justify-between">
+                  <p className="font-extrabold text-white text-sm">{topDish.name}</p>
+                  <div className="flex gap-2 text-xs text-white/80 font-semibold">
+                    <span>{topDish.estimatedCalories} cal</span>
+                    <span>·</span>
+                    <span>{topDish.estimatedProtein}g protein</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => router.push("/dashboard/eat-out")}
+                  className="flex-1 bg-white text-[var(--primary-text)] font-extrabold py-2.5 rounded-2xl hover:bg-[var(--primary-light)] transition-colors flex items-center justify-center gap-2 text-sm"
+                >
+                  <Icon name="utensils" size={14} /> Head to {topRestaurant.name}
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/eat-at-home")}
+                  className="bg-white/20 text-white font-bold py-2.5 px-4 rounded-2xl hover:bg-white/30 transition-colors flex items-center gap-2 text-sm"
+                >
+                  <Icon name="home" size={14} /> Cook
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Idle button */}
+        {hungryState === "idle" && (
+          <div className="flex justify-center pb-8 pt-4" style={{ background: "linear-gradient(to top, var(--background) 60%, transparent)" }}>
+            <button
+              onClick={handleImHungry}
+              className="flex items-center gap-2.5 font-extrabold text-white text-base px-8 py-4 rounded-full active:translate-y-1 transition-all tracking-wide"
+              style={{
+                background: "linear-gradient(135deg, #f4833d, #e05520)",
+                boxShadow: "0 5px 0 #a83d12, 0 8px 24px rgba(224, 85, 32, 0.45)",
+              }}
+            >
+              <Icon name="utensils" size={18} />
+              I&apos;M HUNGRY!
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

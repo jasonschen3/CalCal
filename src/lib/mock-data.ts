@@ -62,6 +62,7 @@ export const mockRestaurants: Restaurant[] = [
     reason: "Very strong fit — customizable high-protein bowls, only 4 min away",
     address: "123 Main St",
     priceLevel: 2,
+    orderUrl: "https://order.cava.com",
   },
   {
     id: "r_2",
@@ -98,6 +99,13 @@ export const mockMenuItems: MenuItem[] = [
     estimatedCalories: 580,
     estimatedProtein: 38,
     description: "Chicken, roasted sweet potato, wild rice, kale",
+    customizations: [
+      "Base: Wild rice + half greens",
+      "Protein: Grilled chicken (double)",
+      "Dips: Hummus + Tzatziki",
+      "Toppings: Tomato + Cucumber + Pickled onions",
+      "Dressing: Lemon herb tahini (light)",
+    ],
   },
   {
     id: "mi_2",
@@ -107,6 +115,13 @@ export const mockMenuItems: MenuItem[] = [
     estimatedCalories: 520,
     estimatedProtein: 22,
     description: "Tofu, mushrooms, wild rice, cucumber, edamame",
+    customizations: [
+      "Base: Wild rice + half greens",
+      "Protein: Falafel (add on)",
+      "Dips: Harissa + Hummus",
+      "Toppings: Roasted pepper + Cabbage",
+      "Dressing: Lemon herb tahini",
+    ],
   },
   {
     id: "mi_3",
@@ -116,6 +131,13 @@ export const mockMenuItems: MenuItem[] = [
     estimatedCalories: 440,
     estimatedProtein: 16,
     description: "Spinach, cucumber, avocado, black beans",
+    customizations: [
+      "Base: Mixed greens",
+      "Protein: Grilled chicken",
+      "Dips: Crazy feta + Hummus",
+      "Toppings: Avocado + Tomato",
+      "Dressing: None (dressing in crazy feta)",
+    ],
   },
 ];
 
