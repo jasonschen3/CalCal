@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { GradeBadge } from "@/components/ui/GradeBadge";
-import { mockRestaurants, mockMenuItems } from "@/lib/mock-data";
-import type { Restaurant } from "@/types";
+import type { Restaurant, MenuItem } from "@/types";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -19,17 +18,84 @@ function PriceLevel({ level }: { level: number }) {
   return <span className="text-gray-400 text-xs">{"$".repeat(level)}{"·".repeat(3 - level)}</span>;
 }
 
+function getUserProfile() {
+  try {
+    const raw = localStorage.getItem("calcal_profile");
+    if (!raw) return { goal: "high_protein", restrictions: [] as string[] };
+    const p = JSON.parse(raw);
+    return {
+      goal: p.goal ?? "high_protein",
+      restrictions: (p.restrictions ?? []) as string[],
+    };
+  } catch {
+    return { goal: "high_protein", restrictions: [] as string[] };
+  }
+}
+
 export default function EatOutPage() {
   const router = useRouter();
+  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setError("Geolocation not supported by your browser.");
+      setLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const { goal, restrictions } = getUserProfile();
+
+        const params = new URLSearchParams({
+          lat: String(lat),
+          lng: String(lng),
+          goal,
+          restrictions: restrictions.join(","),
+        });
+
+        fetch(`/api/restaurants?${params}`)
+          .then((r) => r.json())
+          .then((data) => {
+            if (Array.isArray(data)) setRestaurants(data);
+            else setError("Failed to load restaurants.");
+          })
+          .catch(() => setError("Failed to load restaurants."))
+          .finally(() => setLoading(false));
+      },
+      () => {
+        setError("Location access denied. Enable location permissions to see nearby restaurants.");
+        setLoading(false);
+      }
+    );
+  }, []);
 
   const handleSelectRestaurant = (r: Restaurant) => {
-    setLoading(true);
-    setTimeout(() => {
-      setSelectedRestaurant(r);
-      setLoading(false);
-    }, 800);
+    setSelectedRestaurant(r);
+    setMenuLoading(true);
+    setMenuItems([]);
+
+    const { goal, restrictions } = getUserProfile();
+    const params = new URLSearchParams({
+      name: r.name,
+      cuisine: r.cuisine,
+      goal,
+      restrictions: restrictions.join(","),
+    });
+
+    fetch(`/api/restaurants/${r.id}/menu?${params}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setMenuItems(data);
+      })
+      .catch(() => {})
+      .finally(() => setMenuLoading(false));
   };
 
   if (selectedRestaurant) {
@@ -45,7 +111,6 @@ export default function EatOutPage() {
           </div>
         </nav>
         <main className="max-w-2xl mx-auto px-6 py-8">
-          {/* Restaurant header */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
             <div className="flex items-start justify-between mb-2">
               <div>
@@ -66,39 +131,47 @@ export default function EatOutPage() {
             </div>
           </div>
 
-          {/* Menu recommendations */}
           <h2 className="text-base font-semibold text-gray-900 mb-4">Best dishes for your goal</h2>
-          <div className="space-y-4">
-            {mockMenuItems.map((item, i) => (
-              <div key={item.id} className="bg-white rounded-2xl border border-gray-100 p-5">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-gray-400">#{i + 1}</span>
-                    <h3 className="font-semibold text-gray-900">{item.name}</h3>
+
+          {menuLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="shimmer h-28 rounded-2xl" />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {menuItems.map((item, i) => (
+                <div key={item.id} className="bg-white rounded-2xl border border-gray-100 p-5">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-gray-400">#{i + 1}</span>
+                      <h3 className="font-semibold text-gray-900">{item.name}</h3>
+                    </div>
+                    <GradeBadge grade={item.grade} />
                   </div>
-                  <GradeBadge grade={item.grade} />
+                  {item.description && (
+                    <p className="text-xs text-gray-400 mb-2">{item.description}</p>
+                  )}
+                  <p className="text-sm text-gray-600 mb-3">{item.reason}</p>
+                  {(item.estimatedCalories || item.estimatedProtein) && (
+                    <div className="flex gap-3">
+                      {item.estimatedCalories && (
+                        <span className="text-xs bg-gray-50 border border-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                          ~{item.estimatedCalories} cal
+                        </span>
+                      )}
+                      {item.estimatedProtein && (
+                        <span className="text-xs bg-green-50 border border-green-100 text-green-700 px-2.5 py-1 rounded-full">
+                          {item.estimatedProtein}g protein
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {item.description && (
-                  <p className="text-xs text-gray-400 mb-2">{item.description}</p>
-                )}
-                <p className="text-sm text-gray-600 mb-3">{item.reason}</p>
-                {(item.estimatedCalories || item.estimatedProtein) && (
-                  <div className="flex gap-3">
-                    {item.estimatedCalories && (
-                      <span className="text-xs bg-gray-50 border border-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
-                        ~{item.estimatedCalories} cal
-                      </span>
-                    )}
-                    {item.estimatedProtein && (
-                      <span className="text-xs bg-green-50 border border-green-100 text-green-700 px-2.5 py-1 rounded-full">
-                        {item.estimatedProtein}g protein
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </main>
       </div>
     );
@@ -123,15 +196,23 @@ export default function EatOutPage() {
         </div>
         <h1 className="text-xl font-bold text-gray-900 mb-6">Best options near you</h1>
 
-        {loading ? (
+        {loading && (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="shimmer h-32 rounded-2xl"></div>
+              <div key={i} className="shimmer h-32 rounded-2xl" />
             ))}
           </div>
-        ) : (
+        )}
+
+        {error && (
+          <div className="bg-orange-50 border border-orange-100 rounded-2xl p-5 text-orange-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && (
           <div className="space-y-4">
-            {mockRestaurants.map((restaurant, i) => (
+            {restaurants.map((restaurant, i) => (
               <button
                 key={restaurant.id}
                 onClick={() => handleSelectRestaurant(restaurant)}

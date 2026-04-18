@@ -39,20 +39,36 @@ export default function DashboardPage() {
       router.push("/auth/signin");
     },
   });
+
   const [goal, setGoal] = useState("high_protein");
   const [currentTime, setCurrentTime] = useState("");
+  const [mealWindows, setMealWindows] = useState<MealWindow[]>(mockMealWindows);
+  const [calendarLoaded, setCalendarLoaded] = useState(false);
 
   const userName = session?.user?.name?.split(" ")[0] ?? "there";
 
   useEffect(() => {
     const profile = localStorage.getItem("calcal_profile");
     if (profile) {
-      const parsed = JSON.parse(profile);
-      if (parsed.goal) setGoal(parsed.goal);
+      try {
+        const parsed = JSON.parse(profile);
+        if (parsed.goal) setGoal(parsed.goal);
+      } catch {}
     }
     const now = new Date();
     setCurrentTime(now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }));
   }, []);
+
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    fetch("/api/calendar/meal-windows")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) setMealWindows(data);
+      })
+      .catch(() => {}) // silently fall back to mock data
+      .finally(() => setCalendarLoaded(true));
+  }, [status]);
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
 
@@ -107,8 +123,8 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
             <p className="text-xs text-gray-500 mb-1">Meal windows</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-gray-900">{mockMealWindows.length}</span>
-              <span className="text-xs text-gray-400">identified</span>
+              <span className="text-3xl font-bold text-gray-900">{mealWindows.length}</span>
+              <span className="text-xs text-gray-400">{calendarLoaded ? "from calendar" : "identified"}</span>
             </div>
           </div>
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
@@ -118,25 +134,25 @@ export default function DashboardPage() {
         </div>
 
         {/* Next up banner */}
-        {mockMealWindows[0] && (
+        {mealWindows[0] && (
           <div className="bg-gradient-to-r from-green-600 to-emerald-500 rounded-2xl p-5 mb-6 text-white">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100 text-xs font-medium mb-1">UP NEXT</p>
-                <h2 className="text-lg font-bold mb-0.5">{mockMealWindows[0].label}</h2>
-                <p className="text-green-100 text-sm">{mockMealWindows[0].note}</p>
+                <h2 className="text-lg font-bold mb-0.5">{mealWindows[0].label}</h2>
+                <p className="text-green-100 text-sm">{mealWindows[0].note}</p>
               </div>
               <div className="text-right">
-                <p className="text-green-100 text-xs mb-1">{mockMealWindows[0].startTime}</p>
+                <p className="text-green-100 text-xs mb-1">{mealWindows[0].startTime}</p>
                 <div className="flex gap-2 mt-3">
                   <button
-                    onClick={() => router.push(`/dashboard/eat-at-home?window=${mockMealWindows[0].id}`)}
+                    onClick={() => router.push(`/dashboard/eat-at-home?window=${mealWindows[0].id}`)}
                     className="bg-white text-green-700 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-green-50 transition-colors"
                   >
                     🏠 At Home
                   </button>
                   <button
-                    onClick={() => router.push(`/dashboard/eat-out?window=${mockMealWindows[0].id}`)}
+                    onClick={() => router.push(`/dashboard/eat-out?window=${mealWindows[0].id}`)}
                     className="bg-green-500 text-white text-xs font-semibold px-3 py-2 rounded-lg border border-green-400 hover:bg-green-400 transition-colors"
                   >
                     🍽️ Eat Out
@@ -151,7 +167,7 @@ export default function DashboardPage() {
         <div className="mb-8">
           <h2 className="text-base font-semibold text-gray-900 mb-4">Today&apos;s meal windows</h2>
           <div className="space-y-3">
-            {mockMealWindows.map((window) => (
+            {mealWindows.map((window) => (
               <div
                 key={window.id}
                 onClick={() => router.push(`/dashboard/meal/${window.id}`)}
