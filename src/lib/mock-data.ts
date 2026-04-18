@@ -1,0 +1,131 @@
+import type { MealWindow, Restaurant, MenuItem, DailySummary, UserProfile } from "@/types";
+
+export const mockUser: UserProfile = {
+  id: "user_1",
+  name: "Alex Chen",
+  email: "alex@example.com",
+  avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
+  goal: "high_protein",
+  restrictions: ["gluten_free"],
+  preferences: ["Mediterranean", "Japanese"],
+  dislikes: [],
+  eatingStyle: "grab_and_go",
+  mealsPerDay: 3,
+  onboardingComplete: true,
+};
+
+export const mockMealWindows: MealWindow[] = [
+  {
+    id: "mw_1",
+    label: "Breakfast",
+    startTime: "8:00 AM",
+    endTime: "8:45 AM",
+    durationMinutes: 45,
+    urgency: "now",
+    recommendedPath: "eat_at_home",
+    grade: "A",
+    note: "45 minutes before your 9 AM standup",
+  },
+  {
+    id: "mw_2",
+    label: "Lunch Window",
+    startTime: "12:15 PM",
+    endTime: "1:00 PM",
+    durationMinutes: 45,
+    urgency: "soon",
+    recommendedPath: "eat_out",
+    grade: "A+",
+    note: "Best gap before your 1 PM product review",
+  },
+  {
+    id: "mw_3",
+    label: "Dinner",
+    startTime: "6:30 PM",
+    endTime: "7:30 PM",
+    durationMinutes: 60,
+    urgency: "upcoming",
+    recommendedPath: "flexible",
+    grade: "A",
+    note: "Free after 6 PM — good time to eat at home",
+  },
+];
+
+export const mockRestaurants: Restaurant[] = [
+  {
+    id: "r_1",
+    name: "CAVA",
+    cuisine: "Mediterranean",
+    rating: 4.5,
+    distance: "0.3 mi",
+    distanceMinutes: 4,
+    grade: "A+",
+    reason: "Very strong fit — customizable high-protein bowls, only 4 min away",
+    address: "123 Main St",
+    priceLevel: 2,
+  },
+  {
+    id: "r_2",
+    name: "Sweetgreen",
+    cuisine: "Salads & Bowls",
+    rating: 4.3,
+    distance: "0.5 mi",
+    distanceMinutes: 7,
+    grade: "A",
+    reason: "Clean high-protein options, great macros, fits your gluten-free needs",
+    address: "456 Oak Ave",
+    priceLevel: 2,
+  },
+  {
+    id: "r_3",
+    name: "Chipotle",
+    cuisine: "Mexican",
+    rating: 4.1,
+    distance: "0.8 mi",
+    distanceMinutes: 10,
+    grade: "B+",
+    reason: "Good protein if you order right, but heavier — better for post-workout",
+    address: "789 Elm Blvd",
+    priceLevel: 1,
+  },
+];
+
+export const mockMenuItems: MenuItem[] = [
+  {
+    id: "mi_1",
+    name: "Harvest Bowl",
+    grade: "A+",
+    reason: "Best protein-to-calorie ratio — 38g protein",
+    estimatedCalories: 580,
+    estimatedProtein: 38,
+    description: "Chicken, roasted sweet potato, wild rice, kale",
+  },
+  {
+    id: "mi_2",
+    name: "Shroomami Bowl",
+    grade: "A",
+    reason: "Great plant-based option, high fiber and satiety",
+    estimatedCalories: 520,
+    estimatedProtein: 22,
+    description: "Tofu, mushrooms, wild rice, cucumber, edamame",
+  },
+  {
+    id: "mi_3",
+    name: "Guacamole Greens",
+    grade: "B+",
+    reason: "Fastest option if you only have 10 minutes",
+    estimatedCalories: 440,
+    estimatedProtein: 16,
+    description: "Spinach, cucumber, avocado, black beans",
+  },
+];
+
+export const mockDailySummary: DailySummary = {
+  date: new Date().toISOString().split("T")[0],
+  meals: [],
+  overallGrade: "A",
+  breakdown: [
+    { label: "Breakfast", grade: "A" },
+    { label: "Lunch", grade: "A+" },
+    { label: "Dinner", grade: "A-" },
+  ],
+};

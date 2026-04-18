@@ -1,0 +1,167 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { GradeBadge } from "@/components/ui/GradeBadge";
+import { mockRestaurants, mockMenuItems } from "@/lib/mock-data";
+import type { Restaurant } from "@/types";
+
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <span className="text-yellow-400 text-xs">
+      {"★".repeat(Math.round(rating))}{"☆".repeat(5 - Math.round(rating))}
+      <span className="text-gray-400 ml-1">{rating}</span>
+    </span>
+  );
+}
+
+function PriceLevel({ level }: { level: number }) {
+  return <span className="text-gray-400 text-xs">{"$".repeat(level)}{"·".repeat(3 - level)}</span>;
+}
+
+export default function EatOutPage() {
+  const router = useRouter();
+  const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSelectRestaurant = (r: Restaurant) => {
+    setLoading(true);
+    setTimeout(() => {
+      setSelectedRestaurant(r);
+      setLoading(false);
+    }, 800);
+  };
+
+  if (selectedRestaurant) {
+    return (
+      <div className="min-h-screen bg-[#f8f9fa]">
+        <nav className="bg-white border-b border-gray-100">
+          <div className="max-w-2xl mx-auto px-6 py-4 flex items-center gap-3">
+            <button onClick={() => setSelectedRestaurant(null)} className="text-gray-500 hover:text-gray-700 text-sm">
+              ← Restaurants
+            </button>
+            <span className="text-gray-300">|</span>
+            <span className="font-semibold text-gray-900">{selectedRestaurant.name}</span>
+          </div>
+        </nav>
+        <main className="max-w-2xl mx-auto px-6 py-8">
+          {/* Restaurant header */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-6">
+            <div className="flex items-start justify-between mb-2">
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">{selectedRestaurant.name}</h1>
+                <p className="text-sm text-gray-500">{selectedRestaurant.cuisine}</p>
+              </div>
+              <GradeBadge grade={selectedRestaurant.grade} size="lg" />
+            </div>
+            <div className="flex items-center gap-3 mb-3">
+              <StarRating rating={selectedRestaurant.rating} />
+              <span className="text-gray-300">·</span>
+              <span className="text-xs text-gray-500">{selectedRestaurant.distance} · {selectedRestaurant.distanceMinutes} min</span>
+              <span className="text-gray-300">·</span>
+              <PriceLevel level={selectedRestaurant.priceLevel} />
+            </div>
+            <div className="bg-green-50 border border-green-100 rounded-xl px-4 py-3">
+              <p className="text-sm text-green-700">{selectedRestaurant.reason}</p>
+            </div>
+          </div>
+
+          {/* Menu recommendations */}
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Best dishes for your goal</h2>
+          <div className="space-y-4">
+            {mockMenuItems.map((item, i) => (
+              <div key={item.id} className="bg-white rounded-2xl border border-gray-100 p-5">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-400">#{i + 1}</span>
+                    <h3 className="font-semibold text-gray-900">{item.name}</h3>
+                  </div>
+                  <GradeBadge grade={item.grade} />
+                </div>
+                {item.description && (
+                  <p className="text-xs text-gray-400 mb-2">{item.description}</p>
+                )}
+                <p className="text-sm text-gray-600 mb-3">{item.reason}</p>
+                {(item.estimatedCalories || item.estimatedProtein) && (
+                  <div className="flex gap-3">
+                    {item.estimatedCalories && (
+                      <span className="text-xs bg-gray-50 border border-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                        ~{item.estimatedCalories} cal
+                      </span>
+                    )}
+                    {item.estimatedProtein && (
+                      <span className="text-xs bg-green-50 border border-green-100 text-green-700 px-2.5 py-1 rounded-full">
+                        {item.estimatedProtein}g protein
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f8f9fa]">
+      <nav className="bg-white border-b border-gray-100">
+        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center gap-3">
+          <button onClick={() => router.back()} className="text-gray-500 hover:text-gray-700 text-sm">
+            ← Back
+          </button>
+          <span className="text-gray-300">|</span>
+          <span className="font-semibold text-gray-900">Nearby Restaurants</span>
+        </div>
+      </nav>
+
+      <main className="max-w-2xl mx-auto px-6 py-8">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm text-gray-500">📍</span>
+          <p className="text-sm text-gray-500">Current location · Ranked by goal fit</p>
+        </div>
+        <h1 className="text-xl font-bold text-gray-900 mb-6">Best options near you</h1>
+
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="shimmer h-32 rounded-2xl"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {mockRestaurants.map((restaurant, i) => (
+              <button
+                key={restaurant.id}
+                onClick={() => handleSelectRestaurant(restaurant)}
+                className="w-full bg-white rounded-2xl border border-gray-100 p-5 text-left hover:shadow-md hover:border-gray-200 transition-all"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <span className="w-6 h-6 rounded-full bg-gray-100 text-gray-500 text-xs font-bold flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{restaurant.name}</h3>
+                      <p className="text-xs text-gray-400">{restaurant.cuisine}</p>
+                    </div>
+                  </div>
+                  <GradeBadge grade={restaurant.grade} />
+                </div>
+                <div className="flex items-center gap-3 mb-2 ml-9">
+                  <StarRating rating={restaurant.rating} />
+                  <span className="text-gray-300">·</span>
+                  <span className="text-xs text-gray-500">{restaurant.distanceMinutes} min away</span>
+                  <span className="text-gray-300">·</span>
+                  <PriceLevel level={restaurant.priceLevel} />
+                </div>
+                <p className="text-sm text-gray-600 ml-9">{restaurant.reason}</p>
+              </button>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
