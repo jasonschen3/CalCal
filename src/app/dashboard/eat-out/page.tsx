@@ -38,6 +38,7 @@ export default function EatOutPage() {
   const [selectedRestaurant, setSelectedRestaurant] = useState<Restaurant | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingStatus, setLoadingStatus] = useState("Requesting your location...");
   const [menuLoading, setMenuLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,6 +53,7 @@ export default function EatOutPage() {
       (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         const { goal, restrictions } = getUserProfile();
+        setLoadingStatus("Finding restaurants near you...");
 
         const params = new URLSearchParams({
           lat: String(lat),
@@ -61,18 +63,28 @@ export default function EatOutPage() {
         });
 
         fetch(`/api/restaurants?${params}`)
-          .then((r) => r.json())
+          .then(async (r) => {
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.error ?? "API error");
+            return data;
+          })
           .then((data) => {
             if (Array.isArray(data)) setRestaurants(data);
-            else setError("Failed to load restaurants.");
+            else setError("No restaurants found nearby.");
           })
-          .catch(() => setError("Failed to load restaurants."))
+          .catch((e: Error) => setError(e.message))
           .finally(() => setLoading(false));
       },
-      () => {
-        setError("Location access denied. Enable location permissions to see nearby restaurants.");
+      (err) => {
+        console.error("Geolocation error:", err.code, err.message);
+        const msg =
+          err.code === 1
+            ? "Location access denied. Enable location permissions to see nearby restaurants."
+            : `Could not get your location (code ${err.code}: ${err.message})`;
+        setError(msg);
         setLoading(false);
-      }
+      },
+      { timeout: 30000, maximumAge: 60000 }
     );
   }, []);
 
@@ -198,6 +210,7 @@ export default function EatOutPage() {
 
         {loading && (
           <div className="space-y-4">
+            <p className="text-sm text-gray-400">{loadingStatus}</p>
             {[1, 2, 3].map((i) => (
               <div key={i} className="shimmer h-32 rounded-2xl" />
             ))}
