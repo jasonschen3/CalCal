@@ -1,16 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { signIn } from "next-auth/react";
 
 export default function SignInPage() {
-  const router = useRouter();
-
   const handleGoogleSignIn = () => {
-    // In a real app this would trigger NextAuth Google OAuth
-    // For the hackathon demo, we simulate sign-in and go to onboarding
-    localStorage.setItem("calcal_onboarding_complete", "false");
-    router.push("/onboarding");
+    signIn("google", { callbackUrl: "/onboarding" });
   };
 
   return (
@@ -42,22 +37,6 @@ export default function SignInPage() {
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
             Continue with Google
-          </button>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-100"></div>
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-white px-3 text-xs text-gray-400">or</span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="w-full text-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            Continue as guest (demo mode)
           </button>
         </div>
 

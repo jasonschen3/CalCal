@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { GradeBadge } from "@/components/ui/GradeBadge";
 import { mockMealWindows, mockDailySummary } from "@/lib/mock-data";
 import type { MealWindow } from "@/types";
@@ -32,9 +33,16 @@ function PathIcon({ path }: { path: MealWindow["recommendedPath"] }) {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { data: session, status } = useSession({
+    required: true,
+    onUnauthenticated() {
+      router.push("/auth/signin");
+    },
+  });
   const [goal, setGoal] = useState("high_protein");
-  const [userName, setUserName] = useState("Alex");
   const [currentTime, setCurrentTime] = useState("");
+
+  const userName = session?.user?.name?.split(" ")[0] ?? "there";
 
   useEffect(() => {
     const profile = localStorage.getItem("calcal_profile");
@@ -47,6 +55,10 @@ export default function DashboardPage() {
   }, []);
 
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+
+  if (status === "loading") {
+    return <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center"><p className="text-gray-400">Loading...</p></div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
@@ -63,9 +75,14 @@ export default function DashboardPage() {
             <Link href="/dashboard/history" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
               History
             </Link>
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-semibold text-sm">
-              {userName[0]}
-            </div>
+            {session?.user?.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={session.user.image} alt={userName} className="w-8 h-8 rounded-full" />
+            ) : (
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-semibold text-sm">
+                {userName[0]}
+              </div>
+            )}
           </div>
         </div>
       </nav>
