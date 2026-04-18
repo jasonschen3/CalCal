@@ -9,23 +9,23 @@ interface GradeBadgeProps {
 
 export function GradeBadge({ grade, size = "md" }: GradeBadgeProps) {
   const colorClass =
-    grade === "A+" || grade === "A" || grade === "A-"
-      ? "grade-a"
-      : grade.startsWith("B")
-        ? "grade-b"
-        : "grade-c";
+    grade === "A+"
+      ? "grade-aplus"
+      : grade === "A" || grade === "A-"
+        ? "grade-a"
+        : grade.startsWith("B")
+          ? "grade-b"
+          : "grade-c";
 
   const sizeClass =
     size === "sm"
-      ? "text-xs px-2 py-0.5 font-semibold"
+      ? "text-xs px-2.5 py-0.5 font-bold"
       : size === "lg"
-        ? "text-xl px-4 py-1.5 font-bold"
-        : "text-sm px-2.5 py-1 font-semibold";
+        ? "text-lg px-4 py-1.5 font-extrabold"
+        : "text-sm px-3 py-1 font-bold";
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full ${colorClass} ${sizeClass}`}
-    >
+    <span className={`inline-flex items-center ${colorClass} ${sizeClass}`}>
       {grade}
     </span>
   );

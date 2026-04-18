@@ -46,6 +46,7 @@ export interface Restaurant {
   address: string;
   priceLevel: number;
   photoUrl?: string;
+  orderUrl?: string;
 }
 
 export interface MenuItem {
@@ -56,6 +57,7 @@ export interface MenuItem {
   estimatedCalories?: number;
   estimatedProtein?: number;
   description?: string;
+  customizations?: string[];
 }
 
 export interface MealChoice {
