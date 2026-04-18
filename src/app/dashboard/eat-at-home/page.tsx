@@ -41,12 +41,32 @@ export default function EatAtHomePage() {
 
     try {
       const profile = JSON.parse(localStorage.getItem("calcal_profile") || "{}");
+
+      // Convert image to base64 so Claude can actually see it
+      let imageBase64: string | null = null;
+      let imageMimeType: string | null = null;
+      if (fileInputRef.current?.files?.[0]) {
+        const file = fileInputRef.current.files[0];
+        imageMimeType = file.type || "image/jpeg";
+        imageBase64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            // Strip the "data:image/jpeg;base64," prefix, keep only raw base64
+            resolve(dataUrl.split(",")[1]);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
       const res = await fetch("/api/ai/home-recommendation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           foodDescription: text,
-          imageIncluded: !!imagePreview,
+          imageBase64,
+          imageMimeType,
           goal: profile.goal || "high_protein",
           restrictions: profile.restrictions || [],
         }),
@@ -83,6 +103,23 @@ export default function EatAtHomePage() {
         </nav>
 
         <main className="max-w-2xl mx-auto px-6 py-8 fade-in">
+          {/* Recognized foods */}
+          {result.recognizedFoods && result.recognizedFoods.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-4">
+              <p className="text-xs text-gray-400 font-medium mb-3"> WHAT I SPOTTED</p>
+              <div className="flex flex-wrap gap-2">
+                {result.recognizedFoods.map((food, i) => (
+                  <span
+                    key={i}
+                    className="text-xs bg-green-50 border border-green-100 text-green-700 px-3 py-1.5 rounded-full font-medium"
+                  >
+                    {food}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Best option */}
           <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-4">
             <div className="flex items-start justify-between mb-3">

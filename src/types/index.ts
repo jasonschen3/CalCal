@@ -70,6 +70,7 @@ export interface MealChoice {
 }
 
 export interface HomeRecommendation {
+  recognizedFoods?: string[];
   bestOption: string;
   alternatives: string[];
   estimatedCalories?: number;
